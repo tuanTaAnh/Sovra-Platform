@@ -1,0 +1,13 @@
+services:
+  ingest-service:
+    build:
+      context: ../../ingest-service
+      dockerfile: Dockerfile
+    image: sovra/ingest-service:${APP_VERSION:-local}
+    restart: unless-stopped
+    env_file:
+      - ../env/.env
+    ports:
+      - "${INGEST_SERVICE_PORT:-8002}:8002"
+    volumes:
+      - ${DOCS_HOST_PATH:-../../data/docs}:/app/data/docs:ro

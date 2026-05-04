@@ -1,0 +1,11 @@
+services:
+  rag-service:
+    build:
+      context: ../../rag-service
+      dockerfile: Dockerfile
+    image: sovra/rag-service:${APP_VERSION:-local}
+    restart: unless-stopped
+    env_file:
+      - ../env/.env
+    ports:
+      - "${RAG_SERVICE_PORT:-8001}:8001"

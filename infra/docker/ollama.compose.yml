@@ -1,0 +1,45 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    env_file:
+      - ../env/.env
+    environment:
+      OLLAMA_KEEP_ALIVE: "-1"
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-init:
+    image: curlimages/curl:8.10.1
+    depends_on:
+      - ollama
+    env_file:
+      - ../env/.env
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      echo "Waiting for Ollama...";
+      until curl -fsS http://ollama:11434/api/tags >/dev/null; do sleep 2; done;
+
+      echo "Pulling embedding model: ${EMBEDDING_MODEL:-bge-m3}";
+      curl -fsS http://ollama:11434/api/pull -d "{\"model\":\"${EMBEDDING_MODEL:-bge-m3}\"}";
+
+      echo "Pulling LLM model: ${LLM_MODEL:-llama3}";
+      curl -fsS http://ollama:11434/api/pull -d "{\"model\":\"${LLM_MODEL:-llama3}\"}";
+
+      echo "Preloading embedding model: ${EMBEDDING_MODEL:-bge-m3}";
+      curl -fsS http://ollama:11434/api/embed \
+        -H "Content-Type: application/json" \
+        -d "{\"model\":\"${EMBEDDING_MODEL:-bge-m3}\",\"input\":\"warm up\",\"keep_alive\":-1}";
+
+      echo "Preloading LLM model: ${LLM_MODEL:-llama3}";
+      curl -fsS http://ollama:11434/api/generate \
+        -H "Content-Type: application/json" \
+        -d "{\"model\":\"${LLM_MODEL:-llama3}\",\"prompt\":\"Say OK only.\",\"stream\":false,\"keep_alive\":-1}";
+
+      echo "Ollama models are ready and kept alive.";
+    restart: "no"
+
+volumes:
+  ollama_data:
