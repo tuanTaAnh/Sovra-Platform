@@ -12,13 +12,19 @@ class RAGClient:
     async def health(self) -> dict:
         return await self._request("GET", "/health")
 
-    async def query(self, query: str, top_k: int) -> dict:
+    async def query(
+        self,
+        query: str,
+        top_k: int,
+        chat_history: list[dict] | None = None,
+    ) -> dict:
         return await self._request(
             "POST",
             "/rag/query",
             json={
                 "query": query,
                 "top_k": top_k,
+                "chat_history": chat_history or [],
             },
         )
 

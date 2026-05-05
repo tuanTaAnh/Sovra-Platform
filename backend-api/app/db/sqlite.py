@@ -106,6 +106,31 @@ class SQLiteStore:
 
         return [dict(row) for row in rows]
 
+    def get_recent_messages(self, conversation_id: str, limit: int = 8) -> list[dict]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT role, content, created_at
+                FROM messages
+                WHERE conversation_id = ?
+                AND role IN ('user', 'assistant')
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (conversation_id, limit),
+            ).fetchall()
+
+        messages = [
+            {
+                "role": row["role"],
+                "content": row["content"],
+            }
+            for row in rows
+        ]
+
+        messages.reverse()
+        return messages
+
     def get_conversation(self, conversation_id: str) -> dict[str, Any] | None:
         with self.connect() as conn:
             conversation = conn.execute(

@@ -26,6 +26,7 @@ async def query_chat(payload: ChatQueryRequest):
     store = get_store()
 
     conversation_id = payload.conversation_id
+    chat_history: list[dict] = []
 
     if payload.save_history:
         if conversation_id:
@@ -34,20 +35,31 @@ async def query_chat(payload: ChatQueryRequest):
                     status_code=404,
                     detail="Conversation not found.",
                 )
+
+            # Lấy history TRƯỚC khi add current user message
+            chat_history = store.get_recent_messages(
+                conversation_id=conversation_id,
+                limit=8,
+            )
         else:
             conversation = store.create_conversation()
             conversation_id = conversation["id"]
 
         store.rename_conversation_if_default(conversation_id, payload.query)
+
         store.add_message(
             conversation_id=conversation_id,
             role="user",
             content=payload.query,
         )
 
+    print("payload.query", payload.query)
+    print("chat_history", chat_history)
+
     rag_response = await RAGClient(settings).query(
         query=payload.query,
         top_k=payload.top_k,
+        chat_history=chat_history,
     )
 
     answer = rag_response.get("answer", "")
