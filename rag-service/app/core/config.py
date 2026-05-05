@@ -1,15 +1,37 @@
-from pydantic import BaseModel
-import os
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseModel):
-    ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
-    llm_model: str = os.getenv("LLM_MODEL", "llama3")
-    embedding_model: str = os.getenv("EMBEDDING_MODEL", "bge-m3")
-    milvus_host: str = os.getenv("MILVUS_HOST", "milvus")
-    milvus_port: str = os.getenv("MILVUS_PORT", "19530")
-    milvus_collection: str = os.getenv("MILVUS_COLLECTION", "sovra_knowledge_base")
-    default_top_k: int = int(os.getenv("DEFAULT_TOP_K", "4"))
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ENV_FILE = PROJECT_ROOT / "infra" / "env" / ".env"
 
 
-settings = Settings()
+class Settings(BaseSettings):
+    app_version: str = "local"
+    environment: str = "local"
+
+    ollama_base_url: str = "http://localhost:11434"
+    llm_model: str = "llama3:8b"
+    embedding_model: str = "all-minilm"
+
+    milvus_host: str = "localhost"
+    milvus_port: str = "19530"
+    milvus_collection: str = "sovra_knowledge_base"
+
+    default_top_k: int = 4
+
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

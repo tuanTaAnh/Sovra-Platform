@@ -48,20 +48,10 @@ curl http://localhost:11434/api/ps
 
 ```bash
 ingest-service:
+cd ~/Sovra-Platform
 conda create -n sovra-ingest python=3.11 -y
 conda activate sovra-ingest
 pip install -r ingest-service/requirements.txt
-
-export OLLAMA_BASE_URL=http://localhost:11434
-export EMBEDDING_MODEL=all-minilm
-
-export MILVUS_HOST=localhost
-export MILVUS_PORT=19530
-export MILVUS_COLLECTION=sovra_knowledge_base
-
-export DOCS_PATH="$PWD/data/docs"
-export CHUNK_SIZE=500
-export CHUNK_OVERLAP=100
 
 cd ingest-service
 uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
@@ -71,23 +61,26 @@ curl -X POST http://localhost:8002/ingest/run -H "Content-Type: application/json
 
 ```bash
 rag-service:
-cd sovra-platform
+cd ~/Sovra-Platform
 conda create -n sovra-rag python=3.11 -y
 conda activate sovra-rag
 pip install -r rag-service/requirements.txt
-
-export OLLAMA_BASE_URL=http://localhost:11434
-export LLM_MODEL=llama3:8b
-export EMBEDDING_MODEL=all-minilm
-
-export MILVUS_HOST=localhost
-export MILVUS_PORT=19530
-export MILVUS_COLLECTION=sovra_knowledge_base
-
-export DEFAULT_TOP_K=4
 
 cd rag-service
 uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 curl -X POST http://localhost:8001/rag/query -H "Content-Type: application/json" -d '{"query":"What should I do if tire pressure is low?","top_k":3}'
 ```
+
+```bash
+Backend API:
+cd ~/Sovra-Platform
+conda create -n sovra-backend python=3.11 -y
+conda activate sovra-backend
+
+pip install -r backend-api/requirements.txt
+
+cd backend-api
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
