@@ -1,0 +1,26 @@
+services:
+  backend-api:
+    build:
+      context: ../../backend-api
+      dockerfile: Dockerfile
+    image: sovra-backend-api:local
+    restart: unless-stopped
+    env_file:
+      - ../env/.env.docker
+    environment:
+      RAG_SERVICE_URL: http://rag-service:8001
+      INGEST_SERVICE_URL: http://ingest-service:8002
+      DATABASE_URL: sqlite:////app/data/backend_api.db
+      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:-240}
+    volumes:
+      - backend_api_data:/app/data
+    ports:
+      - "${BACKEND_API_PORT:-8000}:8000"
+
+volumes:
+  backend_api_data:
+
+networks:
+  default:
+    name: sovra-net
+    external: true

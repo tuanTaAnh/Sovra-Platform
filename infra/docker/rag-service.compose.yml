@@ -3,9 +3,24 @@ services:
     build:
       context: ../../rag-service
       dockerfile: Dockerfile
-    image: sovra/rag-service:${APP_VERSION:-local}
+    image: sovra-rag-service:local
     restart: unless-stopped
     env_file:
-      - ../env/.env
+      - ../env/.env.docker
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      LLM_MODEL: ${LLM_MODEL:-llama3:8b}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-all-minilm}
+
+      MILVUS_HOST: ${MILVUS_HOST:-milvus}
+      MILVUS_PORT: ${MILVUS_PORT:-19530}
+      MILVUS_COLLECTION: ${MILVUS_COLLECTION:-sovra_knowledge_base}
+
+      DEFAULT_TOP_K: ${DEFAULT_TOP_K:-4}
     ports:
       - "${RAG_SERVICE_PORT:-8001}:8001"
+
+networks:
+  default:
+    name: sovra-net
+    external: true

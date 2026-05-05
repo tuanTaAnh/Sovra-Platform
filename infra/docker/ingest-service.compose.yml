@@ -3,11 +3,30 @@ services:
     build:
       context: ../../ingest-service
       dockerfile: Dockerfile
-    image: sovra/ingest-service:${APP_VERSION:-local}
+    image: sovra-ingest-service:local
     restart: unless-stopped
     env_file:
-      - ../env/.env
+      - ../env/.env.docker
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-all-minilm}
+
+      MILVUS_HOST: ${MILVUS_HOST:-milvus}
+      MILVUS_PORT: ${MILVUS_PORT:-19530}
+      MILVUS_COLLECTION: ${MILVUS_COLLECTION:-sovra_knowledge_base}
+
+      DOCS_PATH: /app/data/docs
+      CHUNK_SIZE: ${CHUNK_SIZE:-500}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-100}
+    volumes:
+      - type: bind
+        source: ../../data/docs
+        target: /app/data/docs
+        read_only: true
     ports:
       - "${INGEST_SERVICE_PORT:-8002}:8002"
-    volumes:
-      - ${DOCS_HOST_PATH:-../../data/docs}:/app/data/docs:ro
+
+networks:
+  default:
+    name: sovra-net
+    external: true

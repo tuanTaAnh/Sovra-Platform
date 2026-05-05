@@ -9,7 +9,7 @@ services:
       ETCD_SNAPSHOT_COUNT: "50000"
     command: >
       etcd
-      --advertise-client-urls=http://127.0.0.1:2379
+      --advertise-client-urls=http://etcd:2379
       --listen-client-urls=http://0.0.0.0:2379
       --data-dir=/etcd
     volumes:
@@ -19,7 +19,7 @@ services:
     image: minio/minio:latest
     restart: unless-stopped
     env_file:
-      - ../env/.env
+      - ../env/.env.docker
     command: minio server /minio_data --console-address ":9001"
     ports:
       - "${MINIO_API_PORT:-9000}:9000"
@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     command: ["milvus", "run", "standalone"]
     env_file:
-      - ../env/.env
+      - ../env/.env.docker
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
@@ -49,3 +49,8 @@ volumes:
   etcd_data:
   minio_data:
   milvus_data:
+
+networks:
+  default:
+    name: sovra-net
+    external: true

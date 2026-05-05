@@ -3,7 +3,7 @@ services:
     image: ollama/ollama:latest
     restart: unless-stopped
     env_file:
-      - ../env/.env
+       - ../env/.env.docker
     environment:
       OLLAMA_KEEP_ALIVE: "-1"
     ports:
@@ -17,7 +17,7 @@ services:
     depends_on:
       - ollama
     env_file:
-      - ../env/.env
+       - ../env/.env.docker
     entrypoint: ["/bin/sh", "-c"]
     command: |
       echo "Waiting for Ollama...";
@@ -48,3 +48,8 @@ services:
 
 volumes:
   ollama_data:
+
+networks:
+  default:
+    name: sovra-net
+    external: true
