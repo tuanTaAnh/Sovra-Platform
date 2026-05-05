@@ -326,14 +326,45 @@ docker compose \
 
 ---
 
-## 9. Reindex Knowledge Base
+### 9.1 Trigger Ingestion After Updating Files
 
-After the services are running, index the local documents into Milvus:
+To update the knowledge base, add or modify document files under:
+
+```text
+data/docs/
+```
+
+Example structure:
+
+```text
+data/docs/
+├── automotive/
+│   ├── vehicle_manual.md
+│   ├── troubleshooting_faq.md
+│   └── ev_charging_guide.md
+│
+└── enterprise/
+    └── enterprise_policy_sample.md
+```
+
+After adding, editing, or deleting files, trigger the ingest service again:
 
 ```bash
 curl -X POST http://localhost:8002/ingest/run \
   -H "Content-Type: application/json" \
   -d '{"reindex": true}'
+```
+
+This command rebuilds the vector index from the current files in `data/docs/`.
+
+In Docker deployment, the `data/docs` folder is mounted into the ingest container, so the container can read the updated files from the host machine. Docker bind mounts allow a file or directory on the host machine to be mounted into a container. 
+
+After reindexing, test the updated knowledge base:
+
+```bash
+curl -X POST http://localhost:8001/rag/query \
+  -H "Content-Type: application/json" \
+  -d '{"query":"What should I do if tire pressure is low?","top_k":3,"chat_history":[]}'
 ```
 
 ---
