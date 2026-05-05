@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from app.utils.prompt_loader import render_prompt
 
-def format_chat_history(chat_history: list[dict] | None, max_chars: int = 3000) -> str:
+
+def format_chat_history(
+    chat_history: list[dict] | None,
+    max_chars: int = 3000,
+) -> str:
     if not chat_history:
         return ""
 
@@ -27,13 +32,9 @@ def format_chat_history(chat_history: list[dict] | None, max_chars: int = 3000) 
     return text
 
 
-def build_prompt(
-    question: str,
-    chunks: list[dict],
-    chat_history: list[dict] | None = None,
-    standalone_question: str | None = None,
-) -> str:
-    history_text = format_chat_history(chat_history)
+def format_local_context(chunks: list[dict]) -> str:
+    if not chunks:
+        return "No local context found."
 
     context_parts = []
 
@@ -49,28 +50,42 @@ def build_prompt(
             f"content:\n{text}"
         )
 
-    context_text = "\n\n".join(context_parts) if context_parts else "No local context found."
+    return "\n\n".join(context_parts)
 
-    standalone_line = ""
+
+def build_answer_prompt(
+    question: str,
+    chunks: list[dict],
+    chat_history: list[dict] | None = None,
+    standalone_question: str | None = None,
+) -> str:
+    history_text = format_chat_history(chat_history)
+    local_context = format_local_context(chunks)
+
+    standalone_question_line = ""
+
     if standalone_question and standalone_question.strip() != question.strip():
-        standalone_line = f"\nRewritten standalone question: {standalone_question}\n"
+        standalone_question_line = (
+            f"Rewritten standalone question: {standalone_question.strip()}"
+        )
 
-    return f"""
-        You are Sovra AI, a local RAG assistant.
+    return render_prompt(
+        "rag_answer_prompt.txt",
+        chat_history=history_text or "No previous conversation.",
+        local_context=local_context,
+        question=question,
+        standalone_question_line=standalone_question_line,
+    )
 
-        Use the local context first.
-        If the local context does not contain the answer, say that the local context does not provide enough information.
-        Do not invent facts, prices, sales numbers, or vehicle counts.
 
-        Conversation history:
-        {history_text if history_text else "No previous conversation."}
+def build_rewrite_question_prompt(
+    question: str,
+    chat_history: list[dict] | None = None,
+) -> str:
+    history_text = format_chat_history(chat_history, max_chars=2500)
 
-        Local context:
-        {context_text}
-
-        Current user question:
-        {question}
-        {standalone_line}
-
-        Answer clearly and concisely.
-    """.strip()
+    return render_prompt(
+        "rewrite_question_prompt.txt",
+        chat_history=history_text or "No previous conversation.",
+        question=question,
+    )

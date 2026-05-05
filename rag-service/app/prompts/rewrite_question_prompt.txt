@@ -1,0 +1,16 @@
+Rewrite the current user question into a standalone search question.
+
+Rules:
+- Use the conversation history to resolve references like "it", "that one", "the first one", "the second option", "those 3 types".
+- Keep the rewritten question short.
+- Do not answer the question.
+- Do not add facts that are not in the conversation.
+- Return only the rewritten standalone question.
+
+Conversation history:
+${chat_history}
+
+Current user question:
+${question}
+
+Standalone question:

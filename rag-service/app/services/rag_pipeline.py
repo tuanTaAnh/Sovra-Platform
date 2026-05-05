@@ -5,7 +5,10 @@ from time import perf_counter
 from app.clients.ollama_client import OllamaClient
 from app.clients.milvus_store import MilvusStore
 from app.core.config import settings
-from app.services.prompt_builder import build_prompt, format_chat_history
+from app.services.prompt_builder import (
+    build_answer_prompt,
+    build_rewrite_question_prompt,
+)
 
 
 def elapsed_ms(start: float) -> float:
@@ -29,28 +32,15 @@ class RagPipeline:
         if not chat_history:
             return question
 
-        history_text = format_chat_history(chat_history, max_chars=2500)
+        rewrite_prompt = build_rewrite_question_prompt(
+            question=question,
+            chat_history=chat_history,
+        )
 
-        rewrite_prompt = f"""
-Rewrite the current user question into a standalone search question.
-
-Rules:
-- Use the conversation history to resolve references like "it", "that one", "the first one", "the second option", "those 3 types".
-- Keep the rewritten question short.
-- Do not answer the question.
-- Do not add facts that are not in the conversation.
-- Return only the rewritten standalone question.
-
-Conversation history:
-{history_text}
-
-Current user question:
-{question}
-
-Standalone question:
-""".strip()
-
-        rewritten = self.ollama.generate(settings.llm_model, rewrite_prompt).strip()
+        rewritten = self.ollama.generate(
+            settings.llm_model,
+            rewrite_prompt,
+        ).strip()
 
         if not rewritten:
             return question
@@ -92,7 +82,7 @@ Standalone question:
         timings["milvus_total_wrapper_ms"] = elapsed_ms(milvus_start)
 
         prompt_start = perf_counter()
-        prompt = build_prompt(
+        prompt = build_answer_prompt(
             question=question,
             chunks=chunks,
             chat_history=chat_history,
