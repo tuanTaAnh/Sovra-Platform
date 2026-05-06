@@ -15,9 +15,14 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     embedding_model: str = "all-minilm"
 
+    # Milvus Lite
+    milvus_db_path: str = "/app/milvus/sovra_milvus.db"
+    milvus_collection: str = "sovra_knowledge_base"
+
+    # Old Milvus Standalone settings.
+    # Kept for backward compatibility, but not used in Milvus Lite mode.
     milvus_host: str = "localhost"
     milvus_port: str = "19530"
-    milvus_collection: str = "sovra_knowledge_base"
 
     docs_path: str = str(PROJECT_ROOT / "data" / "docs")
     chunk_size: int = 500

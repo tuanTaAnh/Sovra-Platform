@@ -10,7 +10,12 @@ router = APIRouter(tags=["health"])
 @router.get("/health")
 def health():
     ollama = OllamaClient(settings.ollama_base_url)
-    store = MilvusStore(settings.milvus_host, settings.milvus_port, settings.milvus_collection)
+
+    store = MilvusStore(
+        collection_name=settings.milvus_collection,
+        db_path=settings.milvus_db_path,
+    )
+
     return {
         "service": "ingest-service",
         "status": "ok",
@@ -19,4 +24,5 @@ def health():
         "embedding_model": settings.embedding_model,
         "docs_path": settings.docs_path,
         "collection": settings.milvus_collection,
+        "milvus_db_path": settings.milvus_db_path,
     }

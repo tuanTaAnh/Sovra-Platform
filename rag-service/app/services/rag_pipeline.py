@@ -19,9 +19,8 @@ class RagPipeline:
     def __init__(self) -> None:
         self.ollama = OllamaClient(settings.ollama_base_url)
         self.store = MilvusStore(
-            settings.milvus_host,
-            settings.milvus_port,
-            settings.milvus_collection,
+            collection_name=settings.milvus_collection,
+            db_path=settings.milvus_db_path,
         )
 
     def rewrite_question(
@@ -110,6 +109,7 @@ class RagPipeline:
             "llm_model": settings.llm_model,
             "embedding_model": settings.embedding_model,
             "collection": settings.milvus_collection,
+            "milvus_db_path": settings.milvus_db_path,
             "mode": "local",
             "cloud_api_required": False,
             "standalone_question": standalone_question,

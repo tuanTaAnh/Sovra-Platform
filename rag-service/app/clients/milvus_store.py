@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import time
+import os
 from time import perf_counter
 from typing import Any
 
-from pymilvus import Collection, connections, utility
+from pymilvus import MilvusClient
 
 
 def elapsed_ms(start: float) -> float:
@@ -12,36 +12,54 @@ def elapsed_ms(start: float) -> float:
 
 
 class MilvusStore:
-    def __init__(self, host: str, port: str, collection_name: str):
+    """
+    Milvus Lite store for RAG retrieval.
+
+    This version uses a local Milvus Lite database file instead of connecting
+    to a standalone Milvus server by host/port.
+
+    Example:
+        MILVUS_DB_PATH=/app/data/sovra_milvus.db
+        MILVUS_COLLECTION=sovra_knowledge_base
+    """
+
+    def __init__(
+        self,
+        collection_name: str,
+        db_path: str | None = None,
+        host: str | None = None,
+        port: str | None = None,
+    ):
+        self.collection_name = collection_name
+
+        # host and port are kept only for backward compatibility with old callers.
+        # They are not used in Milvus Lite mode.
         self.host = host
         self.port = port
-        self.collection_name = collection_name
-        self._connected = False
 
-    def connect(self, retries: int = 20, delay_seconds: float = 2.0) -> None:
-        if self._connected:
+        self.db_path = db_path or os.getenv("MILVUS_DB_PATH", "/app/data/sovra_milvus.db")
+        self._client: MilvusClient | None = None
+
+    def connect(self) -> None:
+        if self._client is not None:
             return
 
-        last_error: Exception | None = None
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        self._client = MilvusClient(uri=self.db_path)
 
-        for _ in range(retries):
-            try:
-                connections.connect(alias="default", host=self.host, port=self.port)
-                utility.list_collections()
-                self._connected = True
-                return
-            except Exception as exc:
-                last_error = exc
-                time.sleep(delay_seconds)
+    @property
+    def client(self) -> MilvusClient:
+        self.connect()
 
-        raise RuntimeError(
-            f"Could not connect to Milvus at {self.host}:{self.port}: {last_error}"
-        )
+        if self._client is None:
+            raise RuntimeError("Milvus Lite client was not initialized")
+
+        return self._client
 
     def health(self) -> bool:
         try:
-            self.connect(retries=1, delay_seconds=0.1)
-            utility.list_collections()
+            self.connect()
+            self.client.list_collections()
             return True
         except Exception:
             return False
@@ -63,7 +81,9 @@ class MilvusStore:
         timings["connect_ms"] = elapsed_ms(connect_start)
 
         collection_check_start = perf_counter()
-        collection_exists = utility.has_collection(self.collection_name)
+        collection_exists = self.client.has_collection(
+            collection_name=self.collection_name
+        )
         timings["collection_check_ms"] = elapsed_ms(collection_check_start)
 
         if not collection_exists:
@@ -73,21 +93,20 @@ class MilvusStore:
             timings["total_ms"] = elapsed_ms(total_start)
             return [], timings
 
-        load_start = perf_counter()
-        collection = Collection(self.collection_name)
-        collection.load()
-        timings["collection_load_ms"] = elapsed_ms(load_start)
+        # Milvus Lite with MilvusClient does not need Collection(...).load()
+        # in the same way as the old ORM-style API.
+        timings["collection_load_ms"] = 0.0
 
         search_start = perf_counter()
-        results = collection.search(
+        results = self.client.search(
+            collection_name=self.collection_name,
             data=[query_vector],
-            anns_field="vector",
-            param={
-                "metric_type": "COSINE",
-                "params": {"ef": 64},
-            },
             limit=top_k,
             output_fields=["text", "source", "doc_type"],
+            search_params={
+                "metric_type": "COSINE",
+                "params": {},
+            },
         )
         timings["vector_search_ms"] = elapsed_ms(search_start)
 
@@ -95,10 +114,11 @@ class MilvusStore:
         hits: list[dict[str, Any]] = []
 
         for hit in results[0]:
-            entity = hit.entity
+            entity = hit.get("entity", {})
+
             hits.append(
                 {
-                    "score": float(hit.score),
+                    "score": float(hit.get("distance", 0.0)),
                     "text": entity.get("text"),
                     "source": entity.get("source"),
                     "doc_type": entity.get("doc_type"),

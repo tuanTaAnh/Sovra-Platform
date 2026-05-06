@@ -13,14 +13,19 @@ class Settings(BaseSettings):
     environment: str = "local"
 
     ollama_base_url: str = "http://localhost:11434"
-    llm_model: str = "llama3:8b"
+    llm_model: str = "llama3.2:1b"
     embedding_model: str = "all-minilm"
 
-    milvus_host: str = "localhost"
-    milvus_port: str = "19530"
+    # Milvus Lite
+    milvus_db_path: str = "/app/milvus/sovra_milvus.db"
     milvus_collection: str = "sovra_knowledge_base"
 
-    default_top_k: int = 4
+    # Old Milvus Standalone settings.
+    # Kept for backward compatibility, but not used in Milvus Lite mode.
+    milvus_host: str = "localhost"
+    milvus_port: str = "19530"
+
+    default_top_k: int = 3
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),

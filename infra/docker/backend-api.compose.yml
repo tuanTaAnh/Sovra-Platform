@@ -11,7 +11,7 @@ services:
       RAG_SERVICE_URL: http://rag-service:8001
       INGEST_SERVICE_URL: http://ingest-service:8002
       DATABASE_URL: sqlite:////app/data/backend_api.db
-      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:-240}
+      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:-300}
     volumes:
       - backend_api_data:/app/data
     ports:

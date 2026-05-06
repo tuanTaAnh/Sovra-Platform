@@ -11,9 +11,8 @@ class IngestPipeline:
     def __init__(self) -> None:
         self.ollama = OllamaClient(settings.ollama_base_url)
         self.store = MilvusStore(
-            settings.milvus_host,
-            settings.milvus_port,
-            settings.milvus_collection,
+            collection_name=settings.milvus_collection,
+            db_path=settings.milvus_db_path,
         )
 
     def run(self, reindex: bool = False) -> dict:
@@ -67,6 +66,7 @@ class IngestPipeline:
             "chunks_indexed": inserted,
             "embedding_model": settings.embedding_model,
             "collection": settings.milvus_collection,
+            "milvus_db_path": settings.milvus_db_path,
             "milvus_entities": stats.get("entities", 0),
             "documents": document_summaries,
         }

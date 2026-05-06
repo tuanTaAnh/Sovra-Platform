@@ -11,20 +11,24 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-all-minilm}
 
-      MILVUS_HOST: ${MILVUS_HOST:-milvus}
-      MILVUS_PORT: ${MILVUS_PORT:-19530}
+      MILVUS_DB_PATH: ${MILVUS_DB_PATH:-/app/milvus/sovra_milvus.db}
       MILVUS_COLLECTION: ${MILVUS_COLLECTION:-sovra_knowledge_base}
 
       DOCS_PATH: /app/data/docs
-      CHUNK_SIZE: ${CHUNK_SIZE:-500}
-      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-100}
+      CHUNK_SIZE: ${CHUNK_SIZE:-900}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-150}
     volumes:
+      - milvus_lite_data:/app/milvus
       - type: bind
         source: ../../data/docs
         target: /app/data/docs
         read_only: true
     ports:
       - "${INGEST_SERVICE_PORT:-8002}:8002"
+
+volumes:
+  milvus_lite_data:
+    name: sovra_milvus_lite_data
 
 networks:
   default:
